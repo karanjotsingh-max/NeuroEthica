@@ -13,13 +13,13 @@ Before installation, ensure you have:
 ## Installation
 
 ### Step 1: Clone the Repository
-\`\`\`bash
-git clone <your-repo-url>
-cd neuroethica-frontend
+\`\`\`
+git clone <https://github.com/karanjotsingh-max/NeuroEthica.git>
+cd frontend
 \`\`\`
 
 ### Step 2: Install Dependencies
-\`\`\`bash
+\`\`\`
 npm install
 \`\`\`
 
@@ -31,7 +31,7 @@ The project includes an `.npmrc` file configured with `legacy-peer-deps=true` to
 
 Start the Next.js development server with hot-reload:
 
-\`\`\`bash
+\`\`\`
 npm run dev
 \`\`\`
 
