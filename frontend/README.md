@@ -14,7 +14,7 @@ Before installation, ensure you have:
 
 ### Step 1: Clone the Repository
 \`\`\`
-git clone <your-repo-url>
+git clone <https://github.com/karanjotsingh-max/NeuroEthica.git>
 cd frontend
 \`\`\`
 
