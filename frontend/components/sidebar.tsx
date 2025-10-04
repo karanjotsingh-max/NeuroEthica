@@ -6,13 +6,14 @@ import { cn } from "@/lib/utils"
 import { Brain, MessageSquare, Activity, Users, BookOpen, Heart, Phone, Menu, X } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 const navigation = [
   { name: "Home", href: "/", icon: Brain },
   { name: "Chatbot", href: "/chatbot", icon: MessageSquare },
   { name: "Neural Classifier", href: "/classifier", icon: Activity },
-  { name: "About Us", href: "/about", icon: Users },
   { name: "Research", href: "/research", icon: BookOpen },
+  { name: "About Us", href: "/about", icon: Users },
   { name: "Donate", href: "/donate", icon: Heart },
   { name: "Contact & Hotline", href: "/contact", icon: Phone },
 ]
@@ -42,12 +43,8 @@ export function SidebarNav() {
       >
         <div className="flex h-full flex-col">
           {/* Logo/Header */}
-          <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-            <Brain className="h-7 w-7 text-primary" />
-            <div className="flex flex-col">
-              <span className="font-sans font-semibold text-sidebar-foreground text-sm">NeuroEthica</span>
-              <span className="font-sans text-xs text-muted-foreground">Research Platform</span>
-            </div>
+          <div className="flex h-16 items-center border-b border-sidebar-border px-6">
+            <Image src="/logo.png" alt="Neuroethica" width={200} height={40} className="h-8 w-auto" priority />
           </div>
 
           {/* Navigation */}

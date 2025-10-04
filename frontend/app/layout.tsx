@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import "./globals.css"
 import { SidebarNav } from "@/components/sidebar"
+import { TopNav } from "@/components/top-nav"
 
 export const metadata: Metadata = {
   title: "NASA Bioscience Research Platform",
@@ -23,7 +24,8 @@ export default function RootLayout({
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={<div>Loading...</div>}>
           <SidebarNav />
-          <main className="md:ml-64 min-h-screen">{children}</main>
+          <TopNav />
+          <main className="md:ml-64 min-h-screen pt-20">{children}</main>
         </Suspense>
         <Analytics />
       </body>
