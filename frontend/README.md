@@ -1,4 +1,4 @@
-# NeuroEthica - NASA Bioscience Research Platform
+# NeuroEthica
 
 A Next.js-based research platform featuring AI-powered tools for NASA bioscience research, including an LLM chatbot trained on NASA publications, neural data classification GUI, and comprehensive research resources.
 
