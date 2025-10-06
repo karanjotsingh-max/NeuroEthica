@@ -35,10 +35,10 @@ uvicorn unified_server:app --reload --port 8000
 ### Endpoints
 - **Chatbot Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)  
 - **EEG:**
-  - `GET /health`
-  - `GET /stats`
-  - `GET /bands`
-  - `WS /ws/eeg`
+  - `/health`
+  - `/stats`
+  - `/bands`
+  - `/ws/eeg`
 
 ---
 
