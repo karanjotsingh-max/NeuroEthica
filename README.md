@@ -33,7 +33,7 @@ uvicorn unified_server:app --reload --port 8000
 ```
 
 ### Endpoints
-- **Chatbot Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)  
+- **Chatbot:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)  
 - **EEG:**
   - `/health`
   - `/stats`
