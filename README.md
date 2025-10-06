@@ -34,11 +34,11 @@ uvicorn unified_server:app --reload --port 8000
 
 ### Endpoints
 - **Chatbot Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)  
-- **EEG (hidden from docs):**
-  - `GET /health`
-  - `GET /stats`
-  - `GET /bands`
-  - `WS /ws/eeg`
+- **EEG:**
+  - `/health`
+  - `/stats`
+  - `/bands`
+  - `/ws/eeg`
 
 ---
 
@@ -96,11 +96,6 @@ sentence-transformers==2.7.0
 torch==2.2.2
 pylsl==1.16.2
 ```
-
----
-
-## 👨‍💻 Credits
-Developed by **Karanjot Singh** and collaborators as part of the **NASA Hackathon (NeuroEthica)** initiative.
 
 ---
 
