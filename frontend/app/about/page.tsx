@@ -110,7 +110,7 @@ export default function AboutPage() {
           <h2 className="mb-6 font-sans text-2xl font-bold text-foreground">Our Team</h2>
           <p className="mb-8 text-muted-foreground leading-relaxed">
             Our multidisciplinary team brings together expertise in neuroscience, artificial intelligence, space
-            biology, and ethics. We work closely with NASA researchers, academic institutions, and industry partners to
+            biology, and ethics. We work closely with researchers, academic institutions, and industry partners to
             ensure our platform meets the highest standards of scientific rigor.
           </p>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
