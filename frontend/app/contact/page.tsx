@@ -54,10 +54,12 @@ export default function ContactPage() {
                   <Phone className="h-5 w-5" />
                   Call: 1-800-BCI-HELP
                 </Button>
+                {/*
                 <Button size="lg" variant="outline" className="gap-2 bg-transparent">
                   <Mail className="h-5 w-5" />
                   abuse@nasabio.org
-                </Button>
+                </Button> 
+                */}
               </div>
             </div>
           </div>
@@ -149,8 +151,8 @@ export default function ContactPage() {
                   <p className="text-sm text-muted-foreground">General inquiries</p>
                 </div>
               </div>
-              <a href="mailto:contact@nasabio.org" className="text-primary hover:underline">
-                contact@nasabio.org
+              <a href="mailto:davis@neuroethica.ca" className="text-primary hover:underline">
+                davis@neuroethica.ca
               </a>
             </Card>
 
@@ -165,7 +167,7 @@ export default function ContactPage() {
                 </div>
               </div>
               <a href="tel:+1-555-NASA-BIO" className="text-primary hover:underline">
-                +1 (555) NASA-BIO
+                +1 (403) 929-3287
               </a>
             </Card>
 
@@ -176,17 +178,15 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">Address</h3>
-                  <p className="text-sm text-muted-foreground">Research headquarters</p>
+            
                 </div>
               </div>
               <address className="not-italic text-muted-foreground">
-                NASA Bioscience Research Platform
+                8510 111 Street NW
                 <br />
-                300 E Street SW
+                Edmonton, AB T6G 2C8
                 <br />
-                Washington, DC 20546
-                <br />
-                United States
+                Canada
               </address>
             </Card>
 
@@ -197,7 +197,7 @@ export default function ContactPage() {
                 partnerships team.
               </p>
               <Button variant="outline" className="w-full bg-transparent">
-                partnerships@nasabio.org
+                davis@neuroethica.ca
               </Button>
             </Card>
           </div>

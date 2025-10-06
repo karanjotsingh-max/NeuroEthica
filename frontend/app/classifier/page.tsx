@@ -1,10 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Activity, Brain, Wifi, WifiOff, Circle, Download, Play, Square } from "lucide-react"
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+
+import { Activity, Brain, Wifi, WifiOff, Circle, Download, Play, Square, ChevronLeft, ChevronRight } from "lucide-react"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, type TooltipProps } from "recharts"
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 type EEGChannel = {
   name: string
@@ -12,87 +17,335 @@ type EEGChannel = {
   color: string
 }
 
-const channels: EEGChannel[] = [
-  { name: "TP9 (Left Ear)", data: [], color: "hsl(var(--chart-1))" },
-  { name: "AF7 (Left Forehead)", data: [], color: "hsl(var(--chart-2))" },
-  { name: "AF8 (Right Forehead)", data: [], color: "hsl(var(--chart-3))" },
-  { name: "TP10 (Right Ear)", data: [], color: "hsl(var(--chart-4))" },
-]
+type EEGMessage = {
+  fs: number
+  channels: string[]
+  samples: number[][]
+}
+type BandsRow = {
+  i: number
+  gamma: number
+  beta: number
+  alpha: number
+  theta: number
+  delta: number
+}
+
+type MentalState = {
+  name: string
+  description: string
+  dominantBand: string
+  color: string
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 
 const BUFFER_SIZE = 256
 
-export default function ClassifierPage() {
+const channels: EEGChannel[] = [
+  { name: "TP9 (Left Ear)", data: [], color: "#06b6d4" }, // cyan
+  { name: "AF7 (Left Forehead)", data: [], color: "#8b5cf6" }, // purple
+  { name: "AF8 (Right Forehead)", data: [], color: "#ec4899" }, // pink
+  { name: "TP10 (Right Ear)", data: [], color: "#f97316" }, // orange
+]
+const bandColors = {
+  gamma: "#22d3ee", // cyan-400
+  beta: "#3b82f6", // blue-500
+  alpha: "#10b981", // emerald-500
+  theta: "#f59e0b", // amber-500
+  delta: "#ef4444", // red-500
+}
+
+const brainwaveInfo = [
+  {
+    name: "Gamma waves",
+    range: "30 - 100 Hz",
+    color: bandColors.gamma,
+    description:
+      "The fastest brain waves, associated with peak concentration, complex problem-solving, learning, and heightened awareness or insight.",
+  },
+  {
+    name: "Beta waves",
+    range: "13 - 30 Hz",
+    color: bandColors.beta,
+    description:
+      "Associated with active thinking, focus, sustained attention, and cognitive processing. Dominant during waking consciousness and mental activity.",
+  },
+  {
+    name: "Alpha waves",
+    range: "8 - 13 Hz",
+    color: bandColors.alpha,
+    description:
+      "Present during relaxed wakefulness, meditation, and calm mental states. Bridge between conscious thinking and subconscious mind.",
+  },
+  {
+    name: "Theta waves",
+    range: "4 - 8 Hz",
+    color: bandColors.theta,
+    description:
+      "Associated with deep relaxation, meditation, creativity, and light sleep. Important for memory consolidation and emotional processing.",
+  },
+  {
+    name: "Delta waves",
+    range: "0.5 - 4 Hz",
+    color: bandColors.delta,
+    description:
+      "The slowest brain waves, dominant during deep sleep. Essential for healing, regeneration, and restorative sleep processes.",
+  },
+]
+
+const bandDomain = (series: number[]) => {
+  if (!series.length) return [0, 1]
+  const mn = Math.min(...series)
+  const mx = Math.max(...series)
+  const pad = (mx - mn) * 0.15 || 1
+  return [mn - pad, mx + pad]
+}
+// Simple variability metric used as a proxy for contact/quality
+function stdDev(arr: number[]): number {
+  if (!arr || arr.length === 0) return 0
+  const mean = arr.reduce((s, v) => s + v, 0) / arr.length
+  const v = arr.reduce((s, v) => s + (v - mean) * (v - mean), 0) / arr.length
+  return Math.sqrt(v)
+}
+
+const mentalStates: Record<string, MentalState> = {
+  gamma: {
+    name: "Peak Focus",
+    description: "Deep concentration and complex problem-solving",
+    dominantBand: "Gamma",
+    color: bandColors.gamma,
+  },
+  beta: {
+    name: "Active Thinking",
+    description: "Alert, focused, and mentally engaged",
+    dominantBand: "Beta",
+    color: bandColors.beta,
+  },
+  alpha: {
+    name: "Relaxed & Calm",
+    description: "Peaceful awareness and mental clarity",
+    dominantBand: "Alpha",
+    color: bandColors.alpha,
+  },
+  theta: {
+    name: "Deep Relaxation",
+    description: "Creative flow and meditative state",
+    dominantBand: "Theta",
+    color: bandColors.theta,
+  },
+  delta: {
+    name: "Deep Rest",
+    description: "Restorative sleep and recovery",
+    dominantBand: "Delta",
+    color: bandColors.delta,
+  },
+}
+
+const ClassifierPage = () => {
   const [isConnected, setIsConnected] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
-  const [signalQuality, setSignalQuality] = useState({ TP9: 0, AF7: 0, AF8: 0, TP10: 0 })
+  const [recordingDuration, setRecordingDuration] = useState(0)
+  const [connectionStatus, setConnectionStatus] = useState<string>("Disconnected")
+  const [bandHistory, setBandHistory] = useState<BandsRow[]>([])
+  const bandIndexRef = useRef(0)
+  const [activeWaveIndex, setActiveWaveIndex] = useState(0)
   const [channelData, setChannelData] = useState<EEGChannel[]>(
     channels.map((ch) => ({ ...ch, data: new Array(BUFFER_SIZE).fill(0) })),
   )
-  const [frequencyData, setFrequencyData] = useState([
-    { band: "Delta (0.5-4 Hz)", power: 0, color: "hsl(var(--chart-1))" },
-    { band: "Theta (4-8 Hz)", power: 0, color: "hsl(var(--chart-2))" },
-    { band: "Alpha (8-13 Hz)", power: 0, color: "hsl(var(--chart-3))" },
-    { band: "Beta (13-30 Hz)", power: 0, color: "hsl(var(--chart-4))" },
-    { band: "Gamma (30-100 Hz)", power: 0, color: "hsl(var(--chart-5))" },
-  ])
-  const [recordingDuration, setRecordingDuration] = useState(0)
+  const [signalQuality, setSignalQuality] = useState({ TP9: 0, AF7: 0, AF8: 0, TP10: 0 })
+  const wsRef = useRef<WebSocket | null>(null)
+
+  const getCurrentMentalState = (): MentalState => {
+    if (bandHistory.length === 0) {
+      return mentalStates.alpha // default state
+    }
+
+    const recentReadings = bandHistory.slice(-10)
+
+    const averages = {
+      gamma: recentReadings.reduce((sum, r) => sum + r.gamma, 0) / recentReadings.length,
+      beta: recentReadings.reduce((sum, r) => sum + r.beta, 0) / recentReadings.length,
+      alpha: recentReadings.reduce((sum, r) => sum + r.alpha, 0) / recentReadings.length,
+      theta: recentReadings.reduce((sum, r) => sum + r.theta, 0) / recentReadings.length,
+      delta: recentReadings.reduce((sum, r) => sum + r.delta, 0) / recentReadings.length,
+    }
+
+    const dominantBand = Object.entries(averages).reduce(
+      (max, [band, value]) => (value > max.value ? { band, value } : max),
+      { band: "alpha", value: averages.alpha },
+    ).band
+
+    return mentalStates[dominantBand]
+  }
+
+  const currentState = getCurrentMentalState()
 
   useEffect(() => {
     if (!isConnected) return
 
-    const interval = setInterval(() => {
-      setChannelData((prev) =>
-        prev.map((channel) => {
-          const newSample = Math.sin(Date.now() / 200) * 100 + Math.random() * 50 - 25
-          return {
-            ...channel,
-            data: [...channel.data.slice(1), newSample],
+    const wsUrl = process.env.NEXT_PUBLIC_EEG_WS_URL || "ws://127.0.0.1:8000/ws/eeg"
+
+    try {
+      const ws = new WebSocket(wsUrl)
+      wsRef.current = ws
+
+      ws.onopen = () => setConnectionStatus("Connected")
+
+      ws.onmessage = (event) => {
+        try {
+          const message: EEGMessage = JSON.parse(event.data)
+          if (message.samples && message.samples.length > 0) {
+            const enforcedSamples = message.samples.map((sample) => sample.slice(0, 4))
+            console.log("Incoming batch:", enforcedSamples)
+
+            setChannelData((prev) => {
+              const updated = prev.map((channel, idx) => {
+                const incoming = enforcedSamples.map((s) => {
+                  const val = s[idx]
+                  return typeof val === "number" && !isNaN(val) ? val : 0
+                })
+                const merged = [...channel.data, ...incoming].slice(-BUFFER_SIZE)
+                return { ...channel, data: merged }
+              })
+              return updated
+            })
+
+            const q = { TP9: 0, AF7: 0, AF8: 0, TP10: 0 }
+            ;["TP9", "AF7", "AF8", "TP10"].forEach((label, idx) => {
+              const samples = enforcedSamples.map((s) => s[idx] || 0)
+              const sdev = stdDev(samples)
+              const score = Math.max(0, Math.min(100, (sdev / 100) * 100))
+              ;(q as any)[label] = score
+            })
+            setSignalQuality(q)
           }
-        }),
-      )
+        } catch (e) {
+          console.error("WS parse error:", e)
+        }
+      }
 
-      setFrequencyData([
-        { band: "Delta (0.5-4 Hz)", power: Math.random() * 30 + 10, color: "hsl(var(--chart-1))" },
-        { band: "Theta (4-8 Hz)", power: Math.random() * 40 + 20, color: "hsl(var(--chart-2))" },
-        { band: "Alpha (8-13 Hz)", power: Math.random() * 50 + 30, color: "hsl(var(--chart-3))" },
-        { band: "Beta (13-30 Hz)", power: Math.random() * 60 + 40, color: "hsl(var(--chart-4))" },
-        { band: "Gamma (30-100 Hz)", power: Math.random() * 30 + 10, color: "hsl(var(--chart-5))" },
-      ])
+      ws.onerror = (e) => {
+        console.error("WebSocket error:", e)
+        setConnectionStatus("Error")
+      }
 
-      setSignalQuality({
-        TP9: Math.random() * 30 + 70,
-        AF7: Math.random() * 30 + 70,
-        AF8: Math.random() * 30 + 70,
-        TP10: Math.random() * 30 + 70,
-      })
-    }, 50)
+      ws.onclose = () => {
+        setConnectionStatus("Disconnected")
+        setIsConnected(false)
+      }
+    } catch (e) {
+      console.error("WS create error:", e)
+      setConnectionStatus("Error")
+      setIsConnected(false)
+    }
 
-    return () => clearInterval(interval)
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+    }
   }, [isConnected])
 
   useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (isRecording) {
-      interval = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1)
-      }, 1000)
+    if (!isConnected) return
+
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000"
+    const refresh = Number(process.env.NEXT_PUBLIC_BANDS_REFRESH_MS || 250)
+    let timer: NodeJS.Timeout | null = null
+    let aborted = false
+
+    const tick = async () => {
+      try {
+        const res = await Promise.race([
+          fetch(`${apiBase}/bands`),
+          new Promise<Response>((_, rej) => setTimeout(() => rej(new Error("timeout")), 1500)),
+        ])
+        if (!res || !res.ok) throw new Error("bands fetch failed")
+
+        const payload = await res.json()
+        const b = payload?.bands ?? payload
+
+        let next: { gamma: number; beta: number; alpha: number; theta: number; delta: number }
+
+        if (typeof b?.gamma === "number" || typeof b?.beta === "number") {
+          next = {
+            gamma: Number(b?.gamma ?? 0),
+            beta: Number(b?.beta ?? 0),
+            alpha: Number(b?.alpha ?? 0),
+            theta: Number(b?.theta ?? 0),
+            delta: Number(b?.delta ?? 0),
+          }
+        } else {
+          const channels = Object.values(b || {}).filter((v) => v && typeof v === "object") as Array<
+            Record<string, number>
+          >
+          const avg = (key: string) => {
+            const vals = channels.map((c) => Number(c?.[key] ?? 0)).filter((v) => Number.isFinite(v))
+            return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0
+          }
+          next = {
+            gamma: avg("gamma"),
+            beta: avg("beta"),
+            alpha: avg("alpha"),
+            theta: avg("theta"),
+            delta: avg("delta"),
+          }
+        }
+
+        for (const k of Object.keys(next) as (keyof typeof next)[]) {
+          if (!isFinite(next[k]!)) next[k] = 0
+        }
+
+        setBandHistory((prev) => {
+          const i = bandIndexRef.current + 1
+          bandIndexRef.current = i
+          const row = { i, ...next }
+          const LIMIT = 300
+          return [...prev, row].slice(-LIMIT)
+        })
+      } catch {
+        // ignore; next tick will retry
+      } finally {
+        if (!aborted) timer = setTimeout(tick, refresh)
+      }
     }
-    return () => clearInterval(interval)
+
+    tick()
+    return () => {
+      aborted = true
+      if (timer) clearTimeout(timer)
+    }
+  }, [isConnected])
+
+  useEffect(() => {
+    let t: NodeJS.Timeout | undefined
+    if (isRecording) {
+      t = setInterval(() => setRecordingDuration((p) => p + 1), 1000)
+    }
+    return () => {
+      if (t) clearInterval(t)
+    }
   }, [isRecording])
 
   const handleConnect = () => {
-    setIsConnected(!isConnected)
+    setIsConnected((v) => !v)
     if (isConnected) {
       setIsRecording(false)
       setRecordingDuration(0)
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
     }
   }
 
   const handleRecording = () => {
-    if (!isRecording) {
-      setRecordingDuration(0)
-    }
-    setIsRecording(!isRecording)
+    if (!isRecording) setRecordingDuration(0)
+    setIsRecording((v) => !v)
   }
 
   const handleExport = () => {
@@ -106,25 +359,53 @@ export default function ClassifierPage() {
       null,
       2,
     )
-    const dataBlob = new Blob([dataStr], { type: "application/json" })
-    const url = URL.createObjectURL(dataBlob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `eeg-recording-${Date.now()}.json`
-    link.click()
+    const blob = new Blob([dataStr], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `eeg-recording-${Date.now()}.json`
+    a.click()
     URL.revokeObjectURL(url)
   }
 
   const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
   }
 
-  const getQualityColor = (quality: number) => {
-    if (quality >= 80) return "text-green-500"
-    if (quality >= 60) return "text-yellow-500"
+  const getQualityColor = (q: number) => {
+    if (q >= 80) return "text-green-500"
+    if (q >= 60) return "text-yellow-500"
     return "text-red-500"
+  }
+
+  const handlePrevWave = () => {
+    setActiveWaveIndex((prev) => (prev === 0 ? brainwaveInfo.length - 1 : prev - 1))
+  }
+
+  const handleNextWave = () => {
+    setActiveWaveIndex((prev) => (prev === brainwaveInfo.length - 1 ? 0 : prev + 1))
+  }
+
+  const BandTooltip = ({
+    active,
+    payload,
+    label,
+    bandName,
+    color,
+  }: TooltipProps<number, string> & { bandName?: string; color?: string }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+          <p className="text-xs font-medium text-muted-foreground">{bandName}</p>
+          <p className="text-sm font-semibold" style={{ color }}>
+            {payload[0].value?.toFixed(3)}
+          </p>
+        </div>
+      )
+    }
+    return null
   }
 
   return (
@@ -136,8 +417,8 @@ export default function ClassifierPage() {
               <Activity className="h-7 w-7 text-accent" />
             </div>
             <div>
-              <h1 className="font-sans text-3xl font-bold text-foreground">Neural Data Classifier</h1>
-              <p className="text-muted-foreground">Real-time EEG visualization and analysis</p>
+              <h1 className="font-sans text-3xl font-bold text-foreground">Neural Data Viewer</h1>
+              <p className="text-muted-foreground">Real-time Muse 2 EEG (raw, 4 channels only)</p>
             </div>
           </div>
         </div>
@@ -147,7 +428,7 @@ export default function ClassifierPage() {
             <div>
               <h2 className="mb-2 font-sans text-xl font-semibold text-foreground">Headset Connection</h2>
               <p className="text-sm text-muted-foreground">
-                {isConnected ? "Connected to Muse 2" : "Click connect to start streaming"}
+                {isConnected ? `Connected (${connectionStatus})` : "Click connect to start streaming"}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -225,28 +506,43 @@ export default function ClassifierPage() {
                 <h3 className="font-sans text-lg font-semibold text-foreground">Live EEG Channels (256 Hz)</h3>
               </div>
               <div className="space-y-6">
-                {channelData.map((channel) => (
-                  <div key={channel.name}>
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-sm font-medium text-foreground">{channel.name}</span>
-                      <span className="text-xs text-muted-foreground">±200 μV</span>
+                {channelData.map((channel) => {
+                  const minValue = Math.min(...channel.data)
+                  const maxValue = Math.max(...channel.data)
+                  const range = maxValue - minValue
+                  const padding = range * 0.1 || 10
+                  const yMin = minValue - padding
+                  const yMax = maxValue + padding
+
+                  const chartData = channel.data.map((value, i) => ({ index: i, value }))
+
+                  return (
+                    <div key={channel.name}>
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">{channel.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {minValue.toFixed(1)} to {maxValue.toFixed(1)} μV
+                        </span>
+                      </div>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <LineChart data={chartData}>
+                          <Line
+                            type="monotone"
+                            dataKey="value"
+                            stroke={channel.color}
+                            strokeWidth={2}
+                            dot={false}
+                            isAnimationActive={false}
+                          />
+                          <YAxis domain={[yMin, yMax]} stroke="#888888" width={60} />
+                          <XAxis dataKey="index" stroke="#888888" />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#333333" opacity={0.5} />
+                          <Tooltip />
+                        </LineChart>
+                      </ResponsiveContainer>
                     </div>
-                    <ResponsiveContainer width="100%" height={80}>
-                      <LineChart data={channel.data.map((value, i) => ({ index: i, value }))}>
-                        <Line
-                          type="monotone"
-                          dataKey="value"
-                          stroke={channel.color}
-                          strokeWidth={1.5}
-                          dot={false}
-                          isAnimationActive={false}
-                        />
-                        <YAxis domain={[-200, 200]} hide />
-                        <XAxis dataKey="index" hide />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </Card>
 
@@ -254,55 +550,193 @@ export default function ClassifierPage() {
               <Card className="p-6">
                 <div className="mb-4 flex items-center gap-2">
                   <Brain className="h-5 w-5 text-accent" />
-                  <h3 className="font-sans text-lg font-semibold text-foreground">Frequency Band Power</h3>
+                  <h3 className="font-sans text-lg font-semibold text-foreground">Live Brainwave Bands</h3>
                 </div>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={frequencyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="band" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" label={{ value: "Power (μV²)", angle: -90 }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                      }}
-                    />
-                    <Bar dataKey="power" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-sm font-semibold" style={{ color: bandColors.gamma }}>
+                        Gamma waves
+                      </span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={70}>
+                      <LineChart data={bandHistory}>
+                        <Line
+                          type="monotone"
+                          dataKey="gamma"
+                          stroke={bandColors.gamma}
+                          strokeWidth={2}
+                          dot={false}
+                          isAnimationActive={false}
+                        />
+                        <YAxis domain={bandDomain(bandHistory.map((d) => d.gamma))} hide />
+                        <XAxis dataKey="i" hide />
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                        <Tooltip content={<BandTooltip bandName="Gamma" color={bandColors.gamma} />} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-sm font-semibold" style={{ color: bandColors.beta }}>
+                        Beta waves
+                      </span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={70}>
+                      <LineChart data={bandHistory}>
+                        <Line
+                          type="monotone"
+                          dataKey="beta"
+                          stroke={bandColors.beta}
+                          strokeWidth={2}
+                          dot={false}
+                          isAnimationActive={false}
+                        />
+                        <YAxis domain={bandDomain(bandHistory.map((d) => d.beta))} hide />
+                        <XAxis dataKey="i" hide />
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                        <Tooltip content={<BandTooltip bandName="Beta" color={bandColors.beta} />} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-sm font-semibold" style={{ color: bandColors.alpha }}>
+                        Alpha waves
+                      </span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={70}>
+                      <LineChart data={bandHistory}>
+                        <Line
+                          type="monotone"
+                          dataKey="alpha"
+                          stroke={bandColors.alpha}
+                          strokeWidth={2}
+                          dot={false}
+                          isAnimationActive={false}
+                        />
+                        <YAxis domain={bandDomain(bandHistory.map((d) => d.alpha))} hide />
+                        <XAxis dataKey="i" hide />
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                        <Tooltip content={<BandTooltip bandName="Alpha" color={bandColors.alpha} />} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-sm font-semibold" style={{ color: bandColors.theta }}>
+                        Theta waves
+                      </span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={70}>
+                      <LineChart data={bandHistory}>
+                        <Line
+                          type="monotone"
+                          dataKey="theta"
+                          stroke={bandColors.theta}
+                          strokeWidth={2}
+                          dot={false}
+                          isAnimationActive={false}
+                        />
+                        <YAxis domain={bandDomain(bandHistory.map((d) => d.theta))} hide />
+                        <XAxis dataKey="i" hide />
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                        <Tooltip content={<BandTooltip bandName="Theta" color={bandColors.theta} />} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-sm font-semibold" style={{ color: bandColors.delta }}>
+                        Delta waves
+                      </span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={70}>
+                      <LineChart data={bandHistory}>
+                        <Line
+                          type="monotone"
+                          dataKey="delta"
+                          stroke={bandColors.delta}
+                          strokeWidth={2}
+                          dot={false}
+                          isAnimationActive={false}
+                        />
+                        <YAxis domain={bandDomain(bandHistory.map((d) => d.delta))} hide />
+                        <XAxis dataKey="i" hide />
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                        <Tooltip content={<BandTooltip bandName="Delta" color={bandColors.delta} />} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               </Card>
 
-              <Card className="p-6">
-                <div className="mb-4 flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
-                  <h3 className="font-sans text-lg font-semibold text-foreground">Brain State Analysis</h3>
-                </div>
-                <div className="space-y-4">
-                  <div className="rounded-lg bg-muted/30 p-4">
-                    <div className="mb-1 text-sm text-muted-foreground">Current State</div>
-                    <div className="text-xl font-semibold text-foreground">
-                      {frequencyData[3].power > 40
-                        ? "Active Focus"
-                        : frequencyData[2].power > 40
-                          ? "Relaxed"
-                          : "Resting"}
+              <div className="flex flex-col gap-6">
+                <Card className="flex-1 p-6">
+                  <div className="flex h-full flex-col items-center justify-center text-center">
+                    <div
+                      className="mb-3 flex h-16 w-16 items-center justify-center rounded-full"
+                      style={{ backgroundColor: `${currentState.color}20` }}
+                    >
+                      <Brain className="h-8 w-8" style={{ color: currentState.color }} />
+                    </div>
+                    <h3 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                      Current State of Mind
+                    </h3>
+                    <h2 className="mb-2 text-3xl font-bold" style={{ color: currentState.color }}>
+                      {currentState.name}
+                    </h2>
+                    <p className="mb-3 text-sm text-muted-foreground">Dominant: {currentState.dominantBand} waves</p>
+                    <p className="text-balance text-sm leading-relaxed text-foreground">{currentState.description}</p>
+                  </div>
+                </Card>
+
+                <Card className="flex-1 p-6">
+                  <div className="flex h-full flex-col">
+                    <div className="flex-1">
+                      <h4 className="mb-2 text-2xl font-bold" style={{ color: brainwaveInfo[activeWaveIndex].color }}>
+                        {brainwaveInfo[activeWaveIndex].name}
+                      </h4>
+                      <p className="mb-4 text-lg font-medium text-muted-foreground">
+                        {brainwaveInfo[activeWaveIndex].range}
+                      </p>
+                      <p className="text-balance leading-relaxed text-foreground">
+                        {brainwaveInfo[activeWaveIndex].description}
+                      </p>
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-between">
+                      <Button variant="ghost" size="icon" onClick={handlePrevWave} className="h-8 w-8">
+                        <ChevronLeft className="h-5 w-5" />
+                      </Button>
+
+                      <div className="flex gap-2">
+                        {brainwaveInfo.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setActiveWaveIndex(index)}
+                            className={`h-2 w-2 rounded-full transition-all ${
+                              index === activeWaveIndex
+                                ? "w-6 bg-primary"
+                                : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                            }`}
+                            aria-label={`Go to ${brainwaveInfo[index].name}`}
+                          />
+                        ))}
+                      </div>
+
+                      <Button variant="ghost" size="icon" onClick={handleNextWave} className="h-8 w-8">
+                        <ChevronRight className="h-5 w-5" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="rounded-lg bg-muted/30 p-4">
-                    <div className="mb-1 text-sm text-muted-foreground">Dominant Frequency</div>
-                    <div className="text-xl font-semibold text-foreground">
-                      {frequencyData.reduce((max, band) => (band.power > max.power ? band : max)).band}
-                    </div>
-                  </div>
-                  <div className="rounded-lg bg-muted/30 p-4">
-                    <div className="mb-1 text-sm text-muted-foreground">Average Signal Quality</div>
-                    <div className="text-xl font-semibold text-foreground">
-                      {(Object.values(signalQuality).reduce((a, b) => a + b, 0) / 4).toFixed(0)}%
-                    </div>
-                  </div>
-                </div>
-              </Card>
+                </Card>
+              </div>
             </div>
           </div>
         )}
@@ -348,3 +782,5 @@ export default function ClassifierPage() {
     </div>
   )
 }
+
+export default ClassifierPage

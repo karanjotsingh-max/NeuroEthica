@@ -1,0 +1,80 @@
+# -------------------------
+# OS junk
+# -------------------------
+.DS_Store
+Thumbs.db
+
+# -------------------------
+# Python / build / venv
+# -------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+pip-wheel-metadata/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# -------------------------
+# Editors / IDEs
+# -------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# -------------------------
+# Env / secrets
+# -------------------------
+.env
+.env.*
+*.key
+*.pem
+
+# -------------------------
+# App artifacts (generated)
+# -------------------------
+artifacts/
+# if you ever want to keep the index locally but never commit, uncomment:
+# artifacts/index.faiss
+# artifacts/embeddings.npy
+# artifacts/chunks.jsonl
+
+# -------------------------
+# Data (outputs, caches)
+# -------------------------
+# Keep the directory structure but ignore generated files
+data/parsed.jsonl
+data/extractions.jsonl
+# Large raw PDFs (optional: ignore them to keep repo light)
+data/pdfs/*.pdf
+# If you want to track a tiny sample PDF for docs, make a /data/pdfs/sample/ and unignore it:
+# !data/pdfs/sample/**
+# Or keep a placeholder file:
+# !data/pdfs/.gitkeep
+
+# -------------------------
+# Logs / runtime
+# -------------------------
+*.log
+logs/
+uvicorn.pid
+
+# -------------------------
+# Notebooks
+# -------------------------
+.ipynb_checkpoints/
+
+# -------------------------
+# Node (if you add a frontend later)
+# -------------------------
+node_modules/
+.next/
+out/

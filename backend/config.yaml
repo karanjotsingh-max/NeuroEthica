@@ -1,0 +1,15 @@
+ingest:
+  chunk_size: 1200
+  chunk_overlap: 150
+  min_chunk_len: 300
+
+index:
+  faiss_dim: 1536
+
+extract:
+  use_llm: false
+  evidence_spans: true
+
+qa:
+  max_ctx_chunks: 8
+  cite_inline: true

@@ -1,0 +1,33 @@
+# =============================
+# ✅ NeuroEthica Unified Backend
+# Chatbot (SpaceBio RAG) + EEG (Muse 2)
+# Compatible with Python 3.9–3.11
+# =============================
+
+# ---- Core Framework ----
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+python-dotenv==1.0.1
+pydantic==2.6.1
+
+# ---- Numerical & ML ----
+numpy==1.26.4
+scikit-learn==1.4.1.post1
+torch==2.2.2             # CPU version (use GPU variant below if needed)
+sentence-transformers==2.7.0
+transformers>=4.40
+huggingface_hub>=0.23,<0.26
+safetensors>=0.4.3
+accelerate>=0.30.0
+scipy>=1.12.0
+tqdm==4.66.4
+
+# ---- EEG / Muse 2 ----
+pylsl==1.16.2
+
+# ---- Chatbot Knowledge Graph ----
+neo4j==5.24.0
+PyMuPDF==1.24.9
+
+# ---- Optional ----
+requests>=2.31.0
