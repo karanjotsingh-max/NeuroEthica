@@ -108,23 +108,101 @@ export default function AboutPage() {
         {/* Team Section */}
         <Card className="mb-12 p-8">
           <h2 className="mb-6 font-sans text-2xl font-bold text-foreground">Our Team</h2>
-          <p className="mb-6 text-muted-foreground leading-relaxed">
+          <p className="mb-8 text-muted-foreground leading-relaxed">
             Our multidisciplinary team brings together expertise in neuroscience, artificial intelligence, space
             biology, and ethics. We work closely with NASA researchers, academic institutions, and industry partners to
             ensure our platform meets the highest standards of scientific rigor.
           </p>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg bg-muted/30 p-4">
-              <div className="mb-2 font-semibold text-foreground">Neuroscientists</div>
-              <p className="text-sm text-muted-foreground">PhD-level experts in neural systems and brain function</p>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Davis Juell */}
+            <div className="group flex flex-col items-center text-center">
+              <div className="mb-3 h-32 w-32 overflow-hidden rounded-full border-2 border-muted transition-all duration-300 group-hover:border-primary group-hover:shadow-lg">
+                <img
+                  src="/davis.png"
+                  alt="Davis Juell"
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+              </div>
+              <h3 className="mb-1 font-sans text-base font-semibold text-foreground">Davis Juell</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                MSc Neuroscience at University of Lethbridge
+              </p>
             </div>
-            <div className="rounded-lg bg-muted/30 p-4">
-              <div className="mb-2 font-semibold text-foreground">AI Engineers</div>
-              <p className="text-sm text-muted-foreground">Machine learning specialists and data scientists</p>
+
+            {/* Karanjot Singh */}
+            <div className="group flex flex-col items-center text-center">
+              <div className="mb-3 h-32 w-32 overflow-hidden rounded-full border-2 border-muted transition-all duration-300 group-hover:border-primary group-hover:shadow-lg">
+                <img
+                  src="/karan.png"
+                  alt="Karanjot Singh"
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+              </div>
+              <h3 className="mb-1 font-sans text-base font-semibold text-foreground">Karanjot Singh</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Software Developer Intern at Government of Alberta, MSc Computing Science (AI Multimedia Specialization)
+                University of Alberta
+              </p>
             </div>
-            <div className="rounded-lg bg-muted/30 p-4">
-              <div className="mb-2 font-semibold text-foreground">Ethics Advisors</div>
-              <p className="text-sm text-muted-foreground">Bioethics experts ensuring responsible research</p>
+
+            {/* Melwin Chacko Money */}
+            <div className="group flex flex-col items-center text-center">
+              <div className="mb-3 h-32 w-32 overflow-hidden rounded-full border-2 border-muted transition-all duration-300 group-hover:border-primary group-hover:shadow-lg">
+                <img
+                  src="/melwin.png"
+                  alt="Melwin Chacko Money"
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+              </div>
+              <h3 className="mb-1 font-sans text-base font-semibold text-foreground">Melwin Chacko Money</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                MSc in Biomedical Engineering at University of Alberta
+              </p>
+            </div>
+
+            {/* Nena Sproule */}
+            <div className="group flex flex-col items-center text-center">
+              <div className="mb-3 h-32 w-32 overflow-hidden rounded-full border-2 border-muted transition-all duration-300 group-hover:border-primary group-hover:shadow-lg">
+                <img
+                  src="/nena.png"
+                  alt="Nena Sproule"
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+              </div>
+              <h3 className="mb-1 font-sans text-base font-semibold text-foreground">Nena Sproule</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Multi-Media Artist, Illustrator and 2D Animator
+              </p>
+            </div>
+
+            {/* Paula Frossard */}
+            <div className="group flex flex-col items-center text-center">
+              <div className="mb-3 h-32 w-32 overflow-hidden rounded-full border-2 border-muted transition-all duration-300 group-hover:border-primary group-hover:shadow-lg">
+                <img
+                  src="/paula.png"
+                  alt="Paula Frossard"
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+              </div>
+              <h3 className="mb-1 font-sans text-base font-semibold text-foreground">Paula Frossard</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                UX Researcher and Designer Specialist. Machine Learning Analyst student at Norquest College
+              </p>
+            </div>
+
+            {/* Tanveer Singh Bhatia */}
+            <div className="group flex flex-col items-center text-center">
+              <div className="mb-3 h-32 w-32 overflow-hidden rounded-full border-2 border-muted transition-all duration-300 group-hover:border-primary group-hover:shadow-lg">
+                <img
+                  src="/tanveer.png"
+                  alt="Tanveer Singh Bhatia"
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+              </div>
+              <h3 className="mb-1 font-sans text-base font-semibold text-foreground">Tanveer Singh Bhatia</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                MSc Computing Science (AI specialization) at University of Alberta
+              </p>
             </div>
           </div>
         </Card>
