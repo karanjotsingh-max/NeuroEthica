@@ -99,8 +99,3 @@ pylsl==1.16.2
 
 ---
 
-## 👨‍💻 Credits
-Developed by **Karanjot Singh** and collaborators as part of the **NASA Hackathon (NeuroEthica)** initiative.
-
----
-
